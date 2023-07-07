@@ -1,0 +1,159 @@
+#+TITLE: Introduction to RISC-V
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  no
+#+DATE:
+#+OPTIONS:   H:2 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:https://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+startup: beamer
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [bigger]
+#+LaTeX_HEADER: \setminted{fontsize=\footnotesize}
+#+COLUMNS: %40ITEM %10BEAMER_env(Env) %9BEAMER_envargs(Env Args) %4BEAMER_col(Col) %10BEAMER_extra(Extra)
+
+* Introduksjon
+** Utvidelser
+
+| Navn | Formål                        | XLEN | Instruksjoner |
+|------+-------------------------------+------+---------------|
+| I    | Basis                         |   32 |            40 |
+|      |                               |   64 |            15 |
+|------+-------------------------------+------+---------------|
+| C    | Komprimerte instruksjoner     |      |            49 |
+|------+-------------------------------+------+---------------|
+| M    | Multiplikasjon/divisjon       |   32 |             8 |
+|      |                               |   64 |             5 |
+|------+-------------------------------+------+---------------|
+| A    | Atomiske operasjoner          |   32 |            11 |
+|      |                               |   64 |            11 |
+|------+-------------------------------+------+---------------|
+| F    | Enkelpresisjons flyttall      |   32 |            26 |
+|      |                               |   64 |             4 |
+|------+-------------------------------+------+---------------|
+| D    | Dobbelpresisjons flyttall     |   32 |            26 |
+|      |                               |   64 |             6 |
+|------+-------------------------------+------+---------------|
+| Q    | Firedobbelpresisjons flyttall |   32 |            28 |
+|      |                               |   64 |             4 |
+
+* Assembly
+** Registre
+
+| Nummer        | Navn   | Formål                    |
+|---------------+--------+---------------------------|
+| x0            | zero   | 0                         |
+| x1            | ra     | Return address            |
+| x2            | sp     | Stack pointer             |
+| x3            | gp     | Global pointer            |
+| x4            | tp     | Thread pointer            |
+| x8            | fp     | Frame pointer             |
+| x5-x7,x28-x31 | t0-t6  | Temporary registers       |
+| x8-x9,x18-x27 | s0-s11 | Saved registers           |
+| x10-x17       | a0-a7  | Arguments / Return values |
+|               | pc     | Program counter           |
+
+** Instruksjonsformat
+#+BEGIN_SRC asm
+        # t0 = t1 + a1
+        add t0, t1, a1
+
+        # t0 = a1 + 100
+        addi t0, a1, 100
+
+#+END_SRC
+
+** Konstanter
+#+BEGIN_SRC asm
+        # Manual
+        # t0 = 42
+        addi t0, zero, 42
+
+        # t0 = 0x8000_CF26
+        lui t0, 0x8000C000
+        addi t0, t0, 0xF26
+
+        # Pseudo-instruction
+        li t0, 0x8000CF26
+#+END_SRC
+
+** Hopp
+#+BEGIN_SRC asm
+        ### Hopp 5 instruksjoner fram, ikke lagre returadresse
+        # Manual
+        jal zero, 20
+        # Pseudo-instruction
+        j 20
+
+        ### Hopp 5 instruksjoner fram, lagre returadresse
+        # Manual
+        jal ra, 20
+        # Pseudo-instruction
+        jr 20
+#+END_SRC
+
+** Hopp
+#+BEGIN_SRC asm
+        ### Hopp 0x0004_CE20 instruksjoner fram
+        # Manual
+        auipc ra, 0x0004D000
+        jalr  ra, -0x180
+
+        # Pseudo-instruction
+        call 0x0004CE20
+
+        ### Hopp til 0x80A0_558B
+        lui t0, 0x80A05000
+        jalr ra, 0x58B(t0)
+#+END_SRC
+
+** Grener
+#+BEGIN_SRC asm
+1:      ld      t0, 0(sp)
+        li      t1, 42
+        beq     t0, t1, 2f
+        beqz    t0, 3f
+        bgt     t0, t1, 1b
+
+2:      ld      zero, 0(sp)
+3:      ret
+#+END_SRC
+
+** Lese og skrive til minnet
+#+BEGIN_SRC asm
+        # uin64_t* t0
+
+        # *t0 = t1
+        sd t1, 0(t1)
+
+        # t1 = *t0
+        ld t1, 0(t1)
+
+        # t1 = *(t0+1)
+        ld t1, 8(t1)
+#+END_SRC
+
+** Lese og skrive til minnet
+#+BEGIN_SRC asm
+        # 8-bit
+        lb t1, 0(t0)
+        sb t1, 0(t0)
+
+        # 16-bit
+        lh t1, 0(t0)
+        sh t1, 0(t0)
+
+        # 32-bit
+        lw t1, 0(t0)
+        sw t1, 0(t0)
+
+        # 64-bit
+        ld t1, 0(t0)
+        sd t1, 0(t0)
+#+END_SRC
+
+** Links
+- RISC-V specification: https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf
+- NS16550 UART: https://www.lammertbies.nl/comm/info/serial-uart
